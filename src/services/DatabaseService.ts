@@ -55,6 +55,7 @@ class DatabaseService {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           title TEXT NOT NULL,
           description TEXT,
+          imageUrl TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
       `;
@@ -72,16 +73,17 @@ class DatabaseService {
    * Create a new item
    * @param {string} title - The item title
    * @param {string} description - The item description
+   * @param {string} imageUrl - The item image URL
    * @returns {Promise<number>} The ID of the created item
    * @throws {Error} If the insert operation fails
    */
-  public async createItem(title: string, description: string): Promise<number> {
+  public async createItem(title: string, description: string, imageUrl?: string): Promise<number> {
     try {
       if (!this.initialized) {
         await this.initializeDatabase();
       }
-      const query = 'INSERT INTO items (title, description) VALUES (?, ?)';
-      const result = await this.db.run(query, [title, description]);
+      const query = 'INSERT INTO items (title, description, imageUrl) VALUES (?, ?, ?)';
+      const result = await this.db.run(query, [title, description, imageUrl || null]);
       return result.changes?.lastId || 0;
     } catch (err) {
       console.error('Error creating item:', err);
@@ -133,16 +135,17 @@ class DatabaseService {
    * @param {number} id - The item ID
    * @param {string} title - The new title
    * @param {string} description - The new description
+   * @param {string} imageUrl - The new image URL
    * @returns {Promise<void>}
    * @throws {Error} If the update operation fails
    */
-  public async updateItem(id: number, title: string, description: string): Promise<void> {
+  public async updateItem(id: number, title: string, description: string, imageUrl?: string): Promise<void> {
     try {
       if (!this.initialized) {
         await this.initializeDatabase();
       }
-      const query = 'UPDATE items SET title = ?, description = ? WHERE id = ?';
-      await this.db.run(query, [title, description, id]);
+      const query = 'UPDATE items SET title = ?, description = ?, imageUrl = ? WHERE id = ?';
+      await this.db.run(query, [title, description, imageUrl || null, id]);
     } catch (err) {
       console.error('Error updating item:', err);
       throw err;

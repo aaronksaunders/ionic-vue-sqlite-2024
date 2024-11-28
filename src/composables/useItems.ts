@@ -56,14 +56,20 @@ export function useItems() {
    * @async
    * @param {string} title - Title of the item
    * @param {string} description - Description of the item
+   * @param {string} imageUrl - Image URL of the item
    * @throws {Error} If adding item fails
    */
-  const addItem = async (title: string, description: string) => {
+  const addItem = async (title: string, description: string, imageUrl?: string) => {
+    loading.value = true;
+    error.value = null;
+    
     try {
-      await db.createItem(title, description);
-      await loadItems();
+      const id = await db.createItem(title, description, imageUrl);
+      items.value.push({ id, title, description, imageUrl });
     } catch (err: any) {
       error.value = err.message;
+    } finally {
+      loading.value = false;
     }
   };
 
@@ -73,14 +79,23 @@ export function useItems() {
    * @param {number} id - ID of the item to update
    * @param {string} title - New title for the item
    * @param {string} description - New description for the item
+   * @param {string} imageUrl - New image URL for the item
    * @throws {Error} If updating item fails
    */
-  const updateItem = async (id: number, title: string, description: string) => {
+  const updateItem = async (id: number, title: string, description: string, imageUrl?: string) => {
+    loading.value = true;
+    error.value = null;
+    
     try {
-      await db.updateItem(id, title, description);
-      await loadItems();
+      await db.updateItem(id, title, description, imageUrl);
+      const index = items.value.findIndex(item => item.id === id);
+      if (index !== -1) {
+        items.value[index] = { id, title, description, imageUrl };
+      }
     } catch (err: any) {
       error.value = err.message;
+    } finally {
+      loading.value = false;
     }
   };
 

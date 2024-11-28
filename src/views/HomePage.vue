@@ -28,6 +28,12 @@
       <ion-list ref="listRef">
         <ion-item-sliding v-for="item in items" :key="item.id">
           <ion-item>
+            <image-viewer
+              v-if="item.imageUrl"
+              :image-url="item.imageUrl"
+              :alt="item.title"
+              class="ion-margin-end"
+            />
             <ion-label>
               <h2>{{ item.title }}</h2>
               <p>{{ item.description }}</p>
@@ -46,36 +52,12 @@
       </ion-list>
 
       <!-- Add/Edit Modal -->
-      <ion-modal :is-open="isModalOpen" @didDismiss="closeModal">
-        <ion-header>
-          <ion-toolbar>
-            <ion-title>{{ editingItem ? 'Edit Item' : 'Add Item' }}</ion-title>
-            <ion-buttons slot="end">
-              <ion-button @click="closeModal">Cancel</ion-button>
-            </ion-buttons>
-          </ion-toolbar>
-        </ion-header>
-
-        <ion-content class="ion-padding">
-          <ion-item>
-            <ion-label position="stacked">Title</ion-label>
-            <ion-input v-model="formData.title" placeholder="Enter title"></ion-input>
-          </ion-item>
-
-          <ion-item>
-            <ion-label position="stacked">Description</ion-label>
-            <ion-textarea
-              v-model="formData.description"
-              placeholder="Enter description"
-              rows="4"
-            ></ion-textarea>
-          </ion-item>
-
-          <ion-button expand="block" class="ion-margin-top" @click="saveItem">
-            {{ editingItem ? 'Update' : 'Add' }}
-          </ion-button>
-        </ion-content>
-      </ion-modal>
+      <item-modal
+        :is-open="isModalOpen"
+        :editing-item="editingItem"
+        @close="closeModal"
+        @save="saveItem"
+      />
     </ion-content>
   </ion-page>
 </template>
@@ -102,17 +84,15 @@ import {
   IonItemSliding,
   IonItemOptions,
   IonItemOption,
-  IonInput,
-  IonModal,
   IonAlert,
   IonLoading,
-  IonNote,
-  alertController,
-  IonTextarea
+  alertController
 } from '@ionic/vue';
 import { add, create, trash } from 'ionicons/icons';
 import { ref } from 'vue';
 import { useItems } from '@/composables/useItems';
+import ItemModal from '@/components/ItemModal.vue';
+import ImageViewer from '@/components/ImageViewer.vue';
 
 // Get items functionality from composable
 const { items, loading, error, addItem, updateItem, deleteItem } = useItems();
@@ -191,21 +171,19 @@ const closeModal = () => {
 /**
  * Save item
  * @async
+ * @param {Object} data - Item data including title, description, and imageUrl
  */
-const saveItem = async () => {
-  if (!formData.value.title.trim()) {
-    return;
-  }
-
+const saveItem = async (data: { title: string; description: string; imageUrl?: string }) => {
   try {
     if (editingItem.value) {
       await updateItem(
         editingItem.value.id,
-        formData.value.title,
-        formData.value.description
+        data.title,
+        data.description,
+        data.imageUrl
       );
     } else {
-      await addItem(formData.value.title, formData.value.description);
+      await addItem(data.title, data.description, data.imageUrl);
     }
     closeModal();
   } catch (err: any) {

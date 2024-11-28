@@ -37,6 +37,7 @@ import './theme/variables.css';
 import { Capacitor } from '@capacitor/core';
 import { CapacitorSQLite, SQLiteConnection } from '@capacitor-community/sqlite';
 import { defineCustomElements as jeepSqlite } from 'jeep-sqlite/loader';
+import { Camera } from '@capacitor/camera';
 
 /**
  * Initialize the application with SQLite support
@@ -56,6 +57,10 @@ window.addEventListener('DOMContentLoaded', async () => {
       // Initialize SQLite web store
       const sqlite = new SQLiteConnection(CapacitorSQLite);
       await sqlite.initWebStore();
+
+      // Initialize PWA Elements for camera support
+      const { defineCustomElements } = await import('@ionic/pwa-elements/loader');
+      await defineCustomElements(window);
     }
 
     // Create and mount Vue application
