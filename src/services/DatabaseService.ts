@@ -1,4 +1,7 @@
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 
 /**
  * Service class for handling SQLite database operations
@@ -56,7 +59,8 @@ class DatabaseService {
           title TEXT NOT NULL,
           description TEXT,
           imageUrl TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
       `;
       await this.db.execute(schema);
@@ -82,8 +86,9 @@ class DatabaseService {
       if (!this.initialized) {
         await this.initializeDatabase();
       }
-      const query = 'INSERT INTO items (title, description, imageUrl) VALUES (?, ?, ?)';
-      const result = await this.db.run(query, [title, description, imageUrl || null]);
+      const now = new Date().toISOString();
+      const query = 'INSERT INTO items (title, description, imageUrl, created_at, updated_at) VALUES (?, ?, ?, ?, ?)';
+      const result = await this.db.run(query, [title, description, imageUrl || null, now, now]);
       return result.changes?.lastId || 0;
     } catch (err) {
       console.error('Error creating item:', err);
@@ -144,8 +149,9 @@ class DatabaseService {
       if (!this.initialized) {
         await this.initializeDatabase();
       }
-      const query = 'UPDATE items SET title = ?, description = ?, imageUrl = ? WHERE id = ?';
-      await this.db.run(query, [title, description, imageUrl || null, id]);
+      const now = new Date().toISOString();
+      const query = 'UPDATE items SET title = ?, description = ?, imageUrl = ?, updated_at = ? WHERE id = ?';
+      await this.db.run(query, [title, description, imageUrl || null, now, id]);
     } catch (err) {
       console.error('Error updating item:', err);
       throw err;
@@ -167,6 +173,106 @@ class DatabaseService {
       await this.db.run(query, [id]);
     } catch (err) {
       console.error('Error deleting item:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Export database to a file and share it
+   * @returns {Promise<string>} Path to the exported file
+   * @throws {Error} If export fails or not running on device
+   */
+  public async exportDatabase(): Promise<string> {
+    try {
+      if (Capacitor.getPlatform() === 'web') {
+        throw new Error('Database export is only available on mobile devices');
+      }
+
+      if (!this.initialized) {
+        await this.initializeDatabase();
+      }
+
+      // Export database to JSON
+      const jsonExport = await this.db.exportToJson('full');
+      const jsonString = JSON.stringify(jsonExport.export);
+      
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `sqlite-export-${timestamp}.json`;
+
+      // Save to filesystem
+      const result = await Filesystem.writeFile({
+        path: fileName,
+        data: jsonString,
+        directory: Directory.Cache,
+        encoding: Encoding.UTF8
+      });
+
+      // Get the full path of the saved file
+      const filePath = result.uri;
+
+      // Share the file
+      await Share.share({
+        title: 'Database Export',
+        text: 'SQLite Database Export',
+        url: filePath,
+        dialogTitle: 'Share Database Export'
+      });
+
+      return filePath;
+    } catch (err) {
+      console.error('Error exporting database:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Import database from a JSON file
+   * @param {string | Blob} filePath - Path to the JSON file or a Blob
+   * @returns {Promise<void>}
+   * @throws {Error} If import fails or not running on device
+   */
+  public async importDatabase(filePath: string | Blob): Promise<void> {
+    try {
+      if (Capacitor.getPlatform() === 'web') {
+        throw new Error('Database import is only available on mobile devices');
+      }
+
+      // If a Blob is passed, convert it to a file path or content
+      const actualFilePath = typeof filePath === 'string' 
+        ? filePath 
+        : URL.createObjectURL(filePath);
+
+      if (!this.initialized) {
+        await this.initializeDatabase();
+      }
+
+      // Read the file
+      const fileContent = await Filesystem.readFile({
+        path: actualFilePath,
+        encoding: Encoding.UTF8
+      });
+
+      // Parse JSON and validate format
+      const importData = JSON.parse(fileContent.data as string);
+      if (!importData.export || typeof importData.export !== 'object') {
+        throw new Error('Invalid database export file format');
+      }
+
+      // Import the data
+      await this.sqlite.importFromJson(importData);
+      
+      // Close and reopen connection to ensure clean state
+      await this.db.close();
+      this.initialized = false;
+      await this.initializeDatabase();
+
+      // Revoke the object URL if a Blob was used
+      if (typeof filePath !== 'string') {
+        URL.revokeObjectURL(actualFilePath);
+      }
+    } catch (err) {
+      console.error('Error importing database:', err);
       throw err;
     }
   }

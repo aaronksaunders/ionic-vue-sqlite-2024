@@ -7,6 +7,9 @@
           <ion-button @click="openAddModal" :disabled="loading">
             <ion-icon :icon="add" slot="icon-only"></ion-icon>
           </ion-button>
+          <ion-button @click="$router.push('/settings')">
+            <ion-icon :icon="settings" slot="icon-only"></ion-icon>
+          </ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -88,7 +91,7 @@ import {
   IonLoading,
   alertController
 } from '@ionic/vue';
-import { add, create, trash } from 'ionicons/icons';
+import { add, create, trash, settings } from 'ionicons/icons';
 import { ref } from 'vue';
 import { useItems } from '@/composables/useItems';
 import ItemModal from '@/components/ItemModal.vue';
