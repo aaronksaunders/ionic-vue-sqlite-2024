@@ -37,7 +37,6 @@ import './theme/variables.css';
 import { Capacitor } from '@capacitor/core';
 import { CapacitorSQLite, SQLiteConnection } from '@capacitor-community/sqlite';
 import { defineCustomElements as jeepSqlite } from 'jeep-sqlite/loader';
-import { Camera } from '@capacitor/camera';
 
 /**
  * Initialize the application with SQLite support

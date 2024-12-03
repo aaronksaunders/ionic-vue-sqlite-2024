@@ -17,7 +17,7 @@
 
       <ion-item>
         <ion-label position="stacked">Description</ion-label>
-        <ion-textarea v-model="formData.description" placeholder="Enter description" rows="4"></ion-textarea>
+        <ion-textarea v-model="formData.description" placeholder="Enter description" :rows=4></ion-textarea>
       </ion-item>
 
       <!-- Image Selection -->
@@ -152,7 +152,8 @@ const onClose = () => {
   emit('close');
   formData.value = {
     title: '',
-    description: ''
+    description: '',
+    imageUrl: ''
   };
 };
 </script>

@@ -68,6 +68,7 @@ import { Capacitor } from '@capacitor/core';
 import { ref } from 'vue';
 import { db } from '@/services/DatabaseService';
 import { Filesystem } from '@capacitor/filesystem';
+import { FilePicker } from '@capawesome/capacitor-file-picker';
 
 // Check if running on a native platform
 const isNative = Capacitor.getPlatform() !== 'web';
@@ -136,9 +137,8 @@ const importDatabase = async () => {
 const pickAndImportFile = async () => {
   try {
     // Pick file using Filesystem
-    const result = await Filesystem.pickFiles({
-      types: ['application/json'],
-      multiple: false
+    const result = await FilePicker.pickFiles({
+      types: ['application/json']
     });
 
     if (!result.files || result.files.length === 0) {
@@ -152,7 +152,7 @@ const pickAndImportFile = async () => {
     await loading.present();
 
     try {
-      await db.importDatabase(result.files[0].path);
+      await db.importDatabase(result.files[0].path!);
       const toast = await toastController.create({
         message: 'Database imported successfully',
         duration: 2000,
